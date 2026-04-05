@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { provide, ref } from 'vue';
 import { RouterView } from 'vue-router';
+import { createClient } from 'webdav';
 
 const drawer = ref(true);
 const enableDev = ref(0);
@@ -13,6 +14,20 @@ function clickTitle() {
 }
 
 provide('developerMode', developerMode);
+
+const davEndpoint = import.meta.env.VITE_SF_DAV_ENDPOINT;
+const davUsername = import.meta.env.VITE_SF_DAV_USERNAME;
+const davPassword = import.meta.env.VITE_SF_DAV_PASSWORD;
+
+const client = createClient(
+    davEndpoint,
+    {
+        username: davUsername,
+        password: davPassword
+    }
+);
+provide("davClient", client);
+
 
 </script>
 
@@ -31,12 +46,12 @@ provide('developerMode', developerMode);
       >
         <v-list nav>
           <v-list-item link :to="{name: 'home'}">Home</v-list-item>
-          <v-list-item link :to="{name: 'l1'}">Test1</v-list-item>
+          <v-list-item link :to="{name: 'browse', params: { path: '/' }}">Browse DAV</v-list-item>
           <v-list-item v-if="developerMode" link :to="{name: 'dev'}">Developer</v-list-item>
         </v-list>
       </v-navigation-drawer>
       <v-main>
-        <RouterView />
+        <RouterView :key="$route.fullPath"/>
       </v-main>
     </v-layout>
   </v-app>
