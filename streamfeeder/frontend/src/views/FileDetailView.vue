@@ -4,8 +4,7 @@
     <h3>Loading details of {{ path }}</h3>
     <v-img class="mx-auto" height="800"
             lazy-src="https://picsum.photos/id/11/100/60"
-            max-width="1200"
-
+            max-width="1800"
             src="https://bad.src/not/valid"
     >
         <template v-slot:placeholder>
@@ -17,10 +16,20 @@
   </div>
   <div v-else>
     <!-- loading finished one way or the other, but might not have an image we support -->
-    <h3>Details of {{ path }}</h3>
+    <h3>Details of 
+      <span v-for="(p, idx) in pathSegs">
+        <router-link v-if="idx > 0 && p.length > 0" :to="{ name: idx < pathSegs.length - 1 ? 'browse' : 'detail', params: { path: '/' + pathSegs.slice(1, idx+1).join('/') } }">
+          / {{p}}
+        </router-link>
+        <router-link v-if="idx == 0" :to="{name: 'browse', params: {path: '/'}}">
+          (root) 
+        </router-link>
+      </span>
+
+    </h3>
 
     <div v-if="myImageUrl">
-        <v-img v-if="myImageUrl" class="mx-auto" height="800" max-width="1200"
+        <v-img v-if="myImageUrl" class="mx-auto" height="800" max-width="1800"
                 :src="myImageUrl">
         </v-img>
         <v-container class="mx-auto">
@@ -51,7 +60,7 @@
 
 <script setup lang="ts">
 
-import { inject, onMounted, onUnmounted, ref } from 'vue';
+import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
 import { useFormatting } from '../composables/useFormatting';
 import { useIDB } from '../composables/useIDB';
 import { useRouter } from 'vue-router';
@@ -71,6 +80,8 @@ const router = useRouter();
 const loadTime = ref(0);
 const loadSource = ref("");
 const myImageUrl = ref();
+
+const controller = new AbortController();
 
 onMounted(async () => {
     const fItem = await client.getDirectoryContents(props.path);
@@ -103,7 +114,7 @@ onMounted(async () => {
         loadSource.value = "webdav";
         console.log("didn't find it in cache, better fetch the whole blob and save it...");
         if (item.value.mime == "image/jpeg") {
-            const buff: Buffer = await client.getFileContents(item.value.filename);
+            const buff: Buffer = await client.getFileContents(item.value.filename, { signal: controller.signal });
             myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: item.value.mime }));
             const tocache: SFDB["streamitem"] = {
                 key: item.value.filename,
@@ -123,7 +134,15 @@ onUnmounted(() => {
     if (myImageUrl.value) {
         URL.revokeObjectURL(myImageUrl.value)
     };
+    controller.abort();
 });
+
+const pathSegs = computed(() => {
+  const segs = props.path.split("/"); //.slice(0, -1)
+  console.log("Attempting to navigate with path segs", segs);
+  return segs
+})
+
 
 
 
