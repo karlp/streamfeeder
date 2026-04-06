@@ -1,7 +1,7 @@
 <template>
     <!-- TODO you need navigation left/right?! -->
   <div v-if="isLoading">
-    <h3><PathLinks :path="path" :isFile="true"/>Loading....<v-icon :icon="mdiLoading"></v-icon></h3><!-- timerSand as well?-->
+    <h3><PathLinks :path="path" :isFile="true"/> Loading....<v-icon :icon="mdiLoading"></v-icon></h3><!-- timerSand as well?-->
     <v-img class="mx-auto" height="800"
             lazy-src="https://picsum.photos/id/11/100/60"
             max-width="1800"
@@ -37,7 +37,7 @@
             </v-row>
             <v-row align-self="center">
                 <v-col>Time: {{ exifData.DateTimeOriginal }}</v-col>
-                <v-col><a :href="`https://www.openstreetmap.org/?mlat=${exifData.latitude}&mlon=${exifData.longitude}#map=15/${exifData.latitude}/${exifData.longitude}`">Location</a></v-col>
+                <v-col v-if="exifData.latitude && exifData.longitude"><a :href="`https://www.openstreetmap.org/?mlat=${exifData.latitude}&mlon=${exifData.longitude}#map=15/${exifData.latitude}/${exifData.longitude}`">Location</a></v-col>
             </v-row>
         </v-container>
     </div>
