@@ -69,8 +69,11 @@ import {parse} from 'exifr';
 import type { WebDAVClient } from 'webdav';
 
 
+interface Props {
+  path: string;
+}
 
-const props = defineProps(["path"]);
+const props = defineProps<Props>()
 const client = inject('davClient') as WebDAVClient;
 
 const isLoading = ref(true)

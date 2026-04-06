@@ -11,7 +11,7 @@
             </router-link>
             <div v-else>
                 <!-- <router-link :to="{name: 'detail', params: {path: fent.filename}}"> -->
-                    <FileListItem :item="fent"/>
+                    <FileListItem :item="fent" />
                 <!-- </router-link> -->
             </div>
         </v-list-item>
@@ -25,10 +25,14 @@ import { inject, onMounted, ref } from 'vue';
 import FileListItem from '../components/FileListItem.vue';
 
 import PathLinks from '../components/PathLinks.vue';
-import type { WebDAVClient } from 'webdav';
+import type { FileStat, WebDAVClient } from 'webdav';
 import { mdiLoading } from '@mdi/js';
 
-const props = defineProps(["path"]);
+interface Props {
+  path: string;
+}
+
+const props = defineProps<Props>()
 const client = inject('davClient') as WebDAVClient;
 const isLoading = ref(true)
 const dirItems = ref()
@@ -42,5 +46,17 @@ onMounted(async () => {
   // ... I mean,.... do I? it's a huge problem, and not really somethign I need for my realllll installation
   dirItems.value = directoryItems;
 })
+
+// async function handleUnapprove(item: FileStat) {
+//   console.log("unapprove", item.basename);
+// }
+
+// async function handleApprove(item: FileStat) {
+//   console.log("Approve", item.basename);
+// }
+
+// async function handleCaption(item: FileStat, caption: string) {
+//   console.log("caption", item.basename, caption);
+// }
 
 </script>

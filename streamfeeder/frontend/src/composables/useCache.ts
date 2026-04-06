@@ -4,6 +4,9 @@ import type { FileStat, WebDAVClient } from 'webdav';
 import type {streamitem } from '../model';
 
 
+// WE should _probably_ just have this be _jsut_ the webdav+idb cache?
+// we need to enrich objects though!
+
 export function useCache() {
 
     const client = inject('davClient') as WebDAVClient;

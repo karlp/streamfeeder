@@ -12,10 +12,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-// Can we rely on having an item all the time?  I don't think we really can....
-// or do we need to get told file/directory as an extra prop?!
-//const props = defineProps(["item"]);
-const props = defineProps(["path", "isFile"]);
+interface Props {
+  path: string;
+  isFile: boolean;
+}
+
+const props = defineProps<Props>()
 
 const pathSegs = computed<string[]>(()  => {
   const segs = props.path.split("/");
