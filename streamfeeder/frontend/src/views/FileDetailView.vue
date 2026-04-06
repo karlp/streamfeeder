@@ -42,12 +42,12 @@
                 <v-col>{{ formatMB(item.size)}}</v-col>
             </v-row>
             <v-row align-self="center">
-                <v-col>Loaded from {{ loadSource }}</v-col>
-                <v-col>{{loadTime}}</v-col>
+                <v-col>Camera</v-col>
+                <v-col>{{exifData.Make}} / {{exifData.Model}}</v-col>
             </v-row>
             <v-row align-self="center">
-                <v-col>Exif</v-col>
-                <v-col>stuff we don't have yet :)</v-col>
+                <v-col>Time: {{ exifData.DateTimeOriginal }}</v-col>
+                <v-col><a :href="`https://www.openstreetmap.org/?mlat=${exifData.latitude}&mlon=${exifData.longitude}#map=15/${exifData.latitude}/${exifData.longitude}`">Location</a></v-col>
             </v-row>
         </v-container>
     </div>
@@ -69,6 +69,7 @@ import type { WebDAVClient } from 'webdav';
 const { formatMB } = useFormatting();
 const { setItem, getItem } = useIDB();
 import type { SFDB } from '../composables/useIDB';
+import {parse} from 'exifr';
 
 const props = defineProps(["path"]);
 
@@ -80,6 +81,7 @@ const router = useRouter();
 const loadTime = ref(0);
 const loadSource = ref("");
 const myImageUrl = ref();
+const exifData = ref();
 
 const controller = new AbortController();
 
@@ -97,13 +99,15 @@ onMounted(async () => {
     // OK, that's the webdav metadata,  but... now we need the file itself...
     // sooo, look in indexdb, for the original....
     const dbi: SFDB["streamitem"] = await getItem(props.path);
+    let buff;
     if (dbi) {
         loadSource.value = "idb";
         console.log("ok? got one?", dbi);
         if (item.value.mime == "image/jpeg") {
             if (dbi.dataOriginal) {
                 console.log("and it had original data, using that for now");
-                myImageUrl.value = URL.createObjectURL(new Blob([dbi.dataOriginal], { type: item.value.mime }));
+                buff = dbi.dataOriginal;
+                myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: item.value.mime }));
             } else {
                 console.warn("in cache, jpg, but no data? forgot to save?");
             }
@@ -114,7 +118,7 @@ onMounted(async () => {
         loadSource.value = "webdav";
         console.log("didn't find it in cache, better fetch the whole blob and save it...");
         if (item.value.mime == "image/jpeg") {
-            const buff: Buffer = await client.getFileContents(item.value.filename, { signal: controller.signal });
+            buff = await client.getFileContents(item.value.filename, { signal: controller.signal });
             myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: item.value.mime }));
             const tocache: SFDB["streamitem"] = {
                 key: item.value.filename,
@@ -127,6 +131,8 @@ onMounted(async () => {
         }
     }
     loadTime.value = performance.now() - startTime;
+    // exif is separate from timing at least...
+    exifData.value = await parse(buff);
     isLoading.value = false
 });
 
