@@ -49,12 +49,12 @@
 <script setup lang="ts">
 import {inject, onMounted, onUnmounted, ref} from 'vue';
 import { useFormatting } from '../composables/useFormatting';
-import { useIDB } from '../composables/useIDB';
-import type { SFDB } from '../composables/useIDB';
+import * as idbkv from 'idb-keyval';
+import type {streamitem } from '../model';
 import type { WebDAVClient } from 'webdav';
 
 const { formatMB } = useFormatting();
-const { setItem, getItem } = useIDB();
+
 
 const props = defineProps(["item"]);
 const client = inject('davClient') as WebDAVClient;
@@ -81,7 +81,7 @@ onMounted(async () => {
 
     // we got the webdav stat info already,  but... now we need the file itself...
     // sooo, look in indexdb, for , well, the original now, but should be a thumb.
-    const dbi = await getItem(props.item.filename);
+    const dbi = await idbkv.get<streamitem>(props.item.filename)
     if (dbi) {
         loadSource.value = "idb";
         console.log("ok? got one?", dbi);
@@ -102,12 +102,12 @@ onMounted(async () => {
             // this needs to accept an abort!
             const buff: Buffer = await client.getFileContents(props.item.filename, { signal: controller.signal });
             myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: props.item.mime }));
-            const tocache: SFDB["streamitem"] = {
+            const tocache: streamitem = {
                 key: props.item.filename,
                 basename: props.item.basename,
                 dataOriginal: buff,
             }
-            setItem(tocache.key, tocache);
+            idbkv.set(tocache.key, tocache);
         } else {
             console.log("Need to handle this better....")
         }

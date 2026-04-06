@@ -52,16 +52,16 @@
 
 import { inject, onMounted, onUnmounted, ref } from 'vue';
 import { useFormatting } from '../composables/useFormatting';
-import { useIDB } from '../composables/useIDB';
 import { useRouter } from 'vue-router';
 import { mdiLoading } from '@mdi/js';
 import PathLinks from '../components/PathLinks.vue';
 import {parse} from 'exifr';
-import type { SFDB } from '../composables/useIDB';
 import type { WebDAVClient } from 'webdav';
+import * as idbkv from 'idb-keyval';
+import type { streamitem } from '../model';
 
 const { formatMB } = useFormatting();
-const { setItem, getItem } = useIDB();
+
 
 
 const props = defineProps(["path"]);
@@ -90,7 +90,7 @@ onMounted(async () => {
 
     // OK, that's the webdav metadata,  but... now we need the file itself...
     // sooo, look in indexdb, for the original....
-    const dbi: SFDB["streamitem"] = await getItem(props.path);
+    const dbi = await idbkv.get<streamitem>(props.path)
     let buff;
     if (dbi) {
         loadSource.value = "idb";
@@ -112,14 +112,12 @@ onMounted(async () => {
         if (item.value.mime == "image/jpeg") {
             buff = await client.getFileContents(item.value.filename, { signal: controller.signal });
             myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: item.value.mime }));
-            const tocache: SFDB["streamitem"] = {
+            const tocache: streamitem = {
                 key: item.value.filename,
-                value : {
-                    basename: item.value.basename,
-                    dataOriginal: buff,
-                }
+                basename: item.value.basename,
+                dataOriginal: buff,
             }
-            setItem(tocache.key, tocache);
+            idbkv.set(tocache.key, tocache);
         } else {
             console.log("Need to handle this better....")
         }

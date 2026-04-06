@@ -19,7 +19,7 @@
                         </v-row>
                     </v-container>
                     <v-card-actions>
-                        <v-btn color="orange" text="delete cache"></v-btn>
+                        <v-btn color="orange" text="delete cache" @click="handleDeleteCache"></v-btn>
                     </v-card-actions>
 
                 </v-card>
@@ -30,15 +30,27 @@
 
 <script setup lang="ts">
 
-import { computed } from "vue";
-import { useIDB } from "../composables/useIDB";
+import { ref, watchEffect } from "vue";
+import * as idbkv from 'idb-keyval';
+
+const idbCount = ref();
 
 import { mdiDatabaseSettings } from "@mdi/js";
 
-const idbCount = computed(() => {
-    // fucking I don't have this, should switch to idb-keyval, as that's all I'm using it for?
-    return 1;
+watchEffect(async () => {
+//  isLoading.value = true
+  try {
+    const kk = await idbkv.keys()
+    idbCount.value = kk.length
+  } finally {
+    // isLoading.value = false
+  }
 })
 
+async function handleDeleteCache() {
+    console.log("Cleared out local cache!")
+    idbkv.clear();
+    idbCount.value = 0;
+}
 
 </script>
