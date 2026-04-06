@@ -1,31 +1,37 @@
 <template>
   <div v-if="isLoading">
-    <h3>Loading contents of {{ path }}</h3>
+    <h3><PathLinks :path="path" :isFile="false"/> Loading....<v-icon :icon="mdiLoading"></v-icon></h3><!-- timerSand as well?-->
   </div>
   <div v-else>
-    <h3>Contents of 
-      <span v-for="(p, idx) in pathSegs">
-        <router-link v-if="idx > 0 && p.length > 0" :to="{ name: 'browse', params: { path: '/' + pathSegs.slice(1, idx+1).join('/') } }">
-          / {{p}}
-        </router-link>
-        <router-link v-if="idx == 0" :to="{name: 'browse', params: {path: '/'}}">
-          (root) 
-        </router-link>
-      </span>
-      </h3>
-    <FolderComponent :items="dirItems"/>
+    <h3><PathLinks :path="path" :isFile="false"/></h3>
+    <v-list>
+        <v-list-item v-for="fent in dirItems">
+            <router-link v-if="fent.type == 'directory'" :to="{ name: 'browse', params: { path: fent.filename } }">
+                {{ fent.filename }}
+            </router-link>
+            <div v-else>
+                <!-- <router-link :to="{name: 'detail', params: {path: fent.filename}}"> -->
+                    <FileListItem :item="fent"/>
+                <!-- </router-link> -->
+            </div>
+        </v-list-item>
+    </v-list>
   </div>
 </template>
 
 <script setup lang="ts">
 
-import { computed, inject, onMounted, ref } from 'vue';
-import FolderComponent from '../components/FolderComponent.vue';
+import { inject, onMounted, ref } from 'vue';
+import FileListItem from '../components/FileListItem.vue';
+
+import PathLinks from '../components/PathLinks.vue';
+import type { WebDAVClient } from 'webdav';
+import { mdiLoading } from '@mdi/js';
 
 const props = defineProps(["path"]);
-const client = inject('davClient');
+const client = inject('davClient') as WebDAVClient;
 const isLoading = ref(true)
-const dirItems =ref(null)
+const dirItems = ref()
 
 onMounted(async () => {
   const directoryItems = await client.getDirectoryContents(props.path);
@@ -33,12 +39,5 @@ onMounted(async () => {
   isLoading.value = false
   dirItems.value = directoryItems;
 })
-
-const pathSegs = computed(() => {
-  const segs = props.path.split("/")
-  console.log("Attempting to navigate with path segs", segs);
-  return segs
-})
-
 
 </script>

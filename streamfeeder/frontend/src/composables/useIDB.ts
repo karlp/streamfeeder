@@ -2,12 +2,14 @@ import { openDB } from 'idb';
 import type { DBSchema } from 'idb';
 
 export interface SFDB extends DBSchema {
-  streamitem: {
+  'streamitem': {
     key: string;
-    basename: string;
-    dataOriginal: Buffer;
-    thumbnail1: Buffer; // we probably want all sorts of thumbnails right? by size or something?
-    // what else? do we put the thumbnails here too? probably?
+    value: {
+      basename: string;
+      dataOriginal: Buffer;
+      thumbnail1?: Buffer; // we probably want all sorts of thumbnails right? by size or something?
+      // what else? do we put the thumbnails here too? probably?
+    }
   }
 }
 

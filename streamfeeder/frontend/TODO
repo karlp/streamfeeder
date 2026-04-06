@@ -5,3 +5,9 @@ css to mark images as approved or not already
 thumbnailing (both _small_ and a midsized one for general use)
 backend to ... accept approvals and captions
 need to properly handle non-images, both "out of scope" shit and also pngs and movies!
+
+need to get the backend up to start on this, no. UI for approve/caption, so I can have actions that need to go to the backend.
+THen I can get the backend running nicely together.
+THen I can have a functional backend to add auth to?
+
+and a compoennt for path navi!

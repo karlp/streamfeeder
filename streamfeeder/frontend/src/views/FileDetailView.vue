@@ -1,7 +1,7 @@
 <template>
     <!-- TODO you need navigation left/right?! -->
   <div v-if="isLoading">
-    <h3>Loading details of {{ path }}</h3>
+    <h3><PathLinks :path="path" :isFile="true"/>Loading....<v-icon :icon="mdiLoading"></v-icon></h3><!-- timerSand as well?-->
     <v-img class="mx-auto" height="800"
             lazy-src="https://picsum.photos/id/11/100/60"
             max-width="1800"
@@ -16,17 +16,7 @@
   </div>
   <div v-else>
     <!-- loading finished one way or the other, but might not have an image we support -->
-    <h3>Details of 
-      <span v-for="(p, idx) in pathSegs">
-        <router-link v-if="idx > 0 && p.length > 0" :to="{ name: idx < pathSegs.length - 1 ? 'browse' : 'detail', params: { path: '/' + pathSegs.slice(1, idx+1).join('/') } }">
-          / {{p}}
-        </router-link>
-        <router-link v-if="idx == 0" :to="{name: 'browse', params: {path: '/'}}">
-          (root) 
-        </router-link>
-      </span>
-
-    </h3>
+    <h3><PathLinks :path="path" :isFile="true"/></h3>
 
     <div v-if="myImageUrl">
         <v-img v-if="myImageUrl" class="mx-auto" height="800" max-width="1800"
@@ -60,19 +50,21 @@
 
 <script setup lang="ts">
 
-import { computed, inject, onMounted, onUnmounted, ref } from 'vue';
+import { inject, onMounted, onUnmounted, ref } from 'vue';
 import { useFormatting } from '../composables/useFormatting';
 import { useIDB } from '../composables/useIDB';
 import { useRouter } from 'vue-router';
+import { mdiLoading } from '@mdi/js';
+import PathLinks from '../components/PathLinks.vue';
+import {parse} from 'exifr';
+import type { SFDB } from '../composables/useIDB';
 import type { WebDAVClient } from 'webdav';
-// import type { IDBPDatabase } from 'idb';
+
 const { formatMB } = useFormatting();
 const { setItem, getItem } = useIDB();
-import type { SFDB } from '../composables/useIDB';
-import {parse} from 'exifr';
+
 
 const props = defineProps(["path"]);
-
 const client = inject('davClient') as WebDAVClient;
 
 const isLoading = ref(true)
@@ -122,8 +114,10 @@ onMounted(async () => {
             myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: item.value.mime }));
             const tocache: SFDB["streamitem"] = {
                 key: item.value.filename,
-                basename: item.value.basename,
-                dataOriginal: buff,
+                value : {
+                    basename: item.value.basename,
+                    dataOriginal: buff,
+                }
             }
             setItem(tocache.key, tocache);
         } else {
@@ -142,14 +136,6 @@ onUnmounted(() => {
     };
     controller.abort();
 });
-
-const pathSegs = computed(() => {
-  const segs = props.path.split("/"); //.slice(0, -1)
-  console.log("Attempting to navigate with path segs", segs);
-  return segs
-})
-
-
 
 
 </script>
