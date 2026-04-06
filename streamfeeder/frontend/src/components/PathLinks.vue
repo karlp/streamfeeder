@@ -1,5 +1,5 @@
 <template>
-<span v-for="(p, idx) of pathSegs">
+<span v-for="(p, idx) in pathSegs">
     <router-link v-if="idx > 0 && p.length > 0" :to="{ name: props.isFile ? 'detail' : 'browse', params: { path: '/' + pathSegs.slice(1, idx+1).join('/') } }">
         / {{p}}
     </router-link>
@@ -17,7 +17,7 @@ import { computed } from 'vue';
 //const props = defineProps(["item"]);
 const props = defineProps(["path", "isFile"]);
 
-const pathSegs = computed(() => {
+const pathSegs = computed<string[]>(()  => {
   const segs = props.path.split("/");
   console.log("Attempting to navigate with path segs", segs);
   return segs

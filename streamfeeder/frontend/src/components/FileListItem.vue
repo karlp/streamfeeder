@@ -88,7 +88,7 @@ onMounted(async () => {
         if (props.item.mime == "image/jpeg") {
             if (dbi.dataOriginal) {
                 console.log("and it had original data, using that for now");
-                myImageUrl.value = URL.createObjectURL(new Blob([dbi.dataOriginal], { type: props.item.mime }));
+                myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(dbi.dataOriginal)], { type: props.item.mime }));
             } else {
                 console.warn("in cache, jpg, but no data? forgot to save?");
             }
@@ -100,8 +100,8 @@ onMounted(async () => {
         console.log("didn't find it in cache, better fetch the whole blob and save it...");
         if (props.item.mime == "image/jpeg") {
             // this needs to accept an abort!
-            const buff: Buffer = await client.getFileContents(props.item.filename, { signal: controller.signal });
-            myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: props.item.mime }));
+            const buff = await client.getFileContents(props.item.filename, { signal: controller.signal }) as Buffer;
+            myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(buff)], { type: props.item.mime }));
             const tocache: streamitem = {
                 key: props.item.filename,
                 basename: props.item.basename,

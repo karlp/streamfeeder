@@ -99,7 +99,7 @@ onMounted(async () => {
             if (dbi.dataOriginal) {
                 console.log("and it had original data, using that for now");
                 buff = dbi.dataOriginal;
-                myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: item.value.mime }));
+                myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(buff)], { type: item.value.mime }));
             } else {
                 console.warn("in cache, jpg, but no data? forgot to save?");
             }
@@ -110,8 +110,8 @@ onMounted(async () => {
         loadSource.value = "webdav";
         console.log("didn't find it in cache, better fetch the whole blob and save it...");
         if (item.value.mime == "image/jpeg") {
-            buff = await client.getFileContents(item.value.filename, { signal: controller.signal });
-            myImageUrl.value = URL.createObjectURL(new Blob([buff], { type: item.value.mime }));
+            buff = await client.getFileContents(item.value.filename, { signal: controller.signal }) as Buffer;
+            myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(buff)], { type: item.value.mime }));
             const tocache: streamitem = {
                 key: item.value.filename,
                 basename: item.value.basename,
@@ -124,7 +124,9 @@ onMounted(async () => {
     }
     loadTime.value = performance.now() - startTime;
     // exif is separate from timing at least...
-    exifData.value = await parse(buff);
+    if (buff) {
+        exifData.value = await parse(buff);
+    }
     isLoading.value = false
 });
 
