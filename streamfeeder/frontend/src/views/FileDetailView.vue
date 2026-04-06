@@ -31,6 +31,7 @@
                 <v-col>Size</v-col>
                 <v-col>{{ formatMB(item.size)}}</v-col>
             </v-row>
+            <div v-if="exifData">
             <v-row align-self="center">
                 <v-col>Camera</v-col>
                 <v-col>{{exifData.Make}} / {{exifData.Model}}</v-col>
@@ -39,6 +40,12 @@
                 <v-col>Time: {{ exifData.DateTimeOriginal }}</v-col>
                 <v-col v-if="exifData.latitude && exifData.longitude"><a :href="`https://www.openstreetmap.org/?mlat=${exifData.latitude}&mlon=${exifData.longitude}#map=15/${exifData.latitude}/${exifData.longitude}`">Location</a></v-col>
             </v-row>
+            </div>
+            <div v-else>
+            <v-row align-self="center">
+                <v-col>No camera metadata available</v-col>
+            </v-row>
+            </div>
         </v-container>
     </div>
     <div v-else>
@@ -52,15 +59,14 @@
 
 import { inject, onMounted, onUnmounted, ref } from 'vue';
 import { useFormatting } from '../composables/useFormatting';
+const { formatMB } = useFormatting();
 import { useRouter } from 'vue-router';
+import { useCache } from '../composables/useCache';
+const sfc = useCache();
 import { mdiLoading } from '@mdi/js';
 import PathLinks from '../components/PathLinks.vue';
 import {parse} from 'exifr';
 import type { WebDAVClient } from 'webdav';
-import * as idbkv from 'idb-keyval';
-import type { streamitem } from '../model';
-
-const { formatMB } = useFormatting();
 
 
 
@@ -70,8 +76,6 @@ const client = inject('davClient') as WebDAVClient;
 const isLoading = ref(true)
 const item = ref()
 const router = useRouter();
-const loadTime = ref(0);
-const loadSource = ref("");
 const myImageUrl = ref();
 const exifData = ref();
 
@@ -85,47 +89,16 @@ onMounted(async () => {
         return;
     }
     item.value = fItem[0];
-    // get a timestamp to check how much we saved!
-    const startTime = performance.now();
 
-    // OK, that's the webdav metadata,  but... now we need the file itself...
-    // sooo, look in indexdb, for the original....
-    const dbi = await idbkv.get<streamitem>(props.path)
-    let buff;
-    if (dbi) {
-        loadSource.value = "idb";
-        console.log("ok? got one?", dbi);
-        if (item.value.mime == "image/jpeg") {
-            if (dbi.dataOriginal) {
-                console.log("and it had original data, using that for now");
-                buff = dbi.dataOriginal;
-                myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(buff)], { type: item.value.mime }));
-            } else {
-                console.warn("in cache, jpg, but no data? forgot to save?");
-            }
-        } else {
-            console.log("was in our cache, but not an image... fix that later..");
+    const si = await sfc.getFully(item.value, controller.signal);
+    // TODO - only set the IMAGE URL if it's an image of some sort...
+    if (si) {
+        myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(si.dataOriginal)], { type: si.mime }))
+        try {
+            exifData.value = await parse(si.dataOriginal);
+        } catch (err) {
+            // we'll just check for the prescence of exifData itself.
         }
-    } else {
-        loadSource.value = "webdav";
-        console.log("didn't find it in cache, better fetch the whole blob and save it...");
-        if (item.value.mime == "image/jpeg") {
-            buff = await client.getFileContents(item.value.filename, { signal: controller.signal }) as Buffer;
-            myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(buff)], { type: item.value.mime }));
-            const tocache: streamitem = {
-                key: item.value.filename,
-                basename: item.value.basename,
-                dataOriginal: buff,
-            }
-            idbkv.set(tocache.key, tocache);
-        } else {
-            console.log("Need to handle this better....")
-        }
-    }
-    loadTime.value = performance.now() - startTime;
-    // exif is separate from timing at least...
-    if (buff) {
-        exifData.value = await parse(buff);
     }
     isLoading.value = false
 });

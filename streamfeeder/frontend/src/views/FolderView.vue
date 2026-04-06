@@ -37,6 +37,9 @@ onMounted(async () => {
   const directoryItems = await client.getDirectoryContents(props.path);
   console.log("Opened up path: ", props.path, "and got: ", directoryItems);
   isLoading.value = false
+  // OK, problem, if we get 2600 files here... it kills firefox...
+  // pagination is teh suck, but we need _somethign here?
+  // ... I mean,.... do I? it's a huge problem, and not really somethign I need for my realllll installation
   dirItems.value = directoryItems;
 })
 

@@ -47,17 +47,14 @@
 </template>
 
 <script setup lang="ts">
-import {inject, onMounted, onUnmounted, ref} from 'vue';
+import { onMounted, onUnmounted, ref} from 'vue';
 import { useFormatting } from '../composables/useFormatting';
-import * as idbkv from 'idb-keyval';
-import type {streamitem } from '../model';
-import type { WebDAVClient } from 'webdav';
-
 const { formatMB } = useFormatting();
+import { useCache } from '../composables/useCache';
+const sfc = useCache();
 
 
 const props = defineProps(["item"]);
-const client = inject('davClient') as WebDAVClient;
 
 const caption = ref();
 
@@ -69,52 +66,21 @@ const caption = ref();
     but, it gets us started.
 */
 const isLoading = ref(true);
-const loadTime = ref(0);
-const loadSource = ref("");
 const myImageUrl = ref();
 
 const controller = new AbortController();
 
 onMounted(async () => {
-    // get a timestamp to check how much we saved!
-    const startTime = performance.now();
 
-    // we got the webdav stat info already,  but... now we need the file itself...
-    // sooo, look in indexdb, for , well, the original now, but should be a thumb.
-    const dbi = await idbkv.get<streamitem>(props.item.filename)
-    if (dbi) {
-        loadSource.value = "idb";
-        console.log("ok? got one?", dbi);
-        if (props.item.mime == "image/jpeg") {
-            if (dbi.dataOriginal) {
-                console.log("and it had original data, using that for now");
-                myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(dbi.dataOriginal)], { type: props.item.mime }));
-            } else {
-                console.warn("in cache, jpg, but no data? forgot to save?");
-            }
-        } else {
-            console.log("was in our cache, but not an image... fix that later..");
-        }
-    } else {
-        loadSource.value = "webdav";
-        console.log("didn't find it in cache, better fetch the whole blob and save it...");
-        if (props.item.mime == "image/jpeg") {
-            // this needs to accept an abort!
-            const buff = await client.getFileContents(props.item.filename, { signal: controller.signal }) as Buffer;
-            myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(buff)], { type: props.item.mime }));
-            const tocache: streamitem = {
-                key: props.item.filename,
-                basename: props.item.basename,
-                dataOriginal: buff,
-            }
-            idbkv.set(tocache.key, tocache);
-        } else {
-            console.log("Need to handle this better....")
-        }
+    const si = await sfc.getFully(props.item, controller.signal);
+    // TODO - only set the IMAGE URL if it's an image of some sort...
+    if (si) {
+        // For other files, we need... somethign else?
+        myImageUrl.value = URL.createObjectURL(new Blob([new Uint8Array(si.dataOriginal)], { type: si.mime }))
     }
-    loadTime.value = performance.now() - startTime;
-    isLoading.value = false
-    console.log("Loaded ", props.item.basename, "from: ", loadSource.value, "in time: ", loadTime.value);
+
+
+    isLoading.value = false;
 });
 
 onUnmounted(() => {
