@@ -110,19 +110,22 @@ onMounted(async () => {
             // I think we need a prop or emit or something that says "we've failed" and the top level view can have a "retry" button/timer that retries all children that failed?
             console.log("Not... sure what we do here?  ");
         }
-        const data = await response.json();
-        if (data.filename != props.item.filename) {
-            console.error("shits' sbusted yo...");
+        const dataIn = await response.json();
+        if (dataIn.length > 1) {
+            console.error("Unexpected number of results for filename: ", props.item.filename, dataIn);
         }
-        // if (data.caption) {
-
-        // }
-        // undefined stays undef?
-        caption.value = data.caption;
-        if (data.approval !== undefined) {
-            if (data.approval) {
+        if (dataIn.length == 1) {
+            const data = dataIn[0];
+            if (data.fn != props.item.filename) {  // FIXME- lol, we're not typing our rest types yet...
+                console.error("shits' sbusted yo...", data.fn, props.item.filename);
+            }
+            console.log("Received", data)
+            caption.value = data.caption;
+            // will be null if unknown/unspecified
+            if (data.approval === true) {
                 disableApprove.value = true;
-            } else {
+            }
+            if (data.approval === false) {
                 disableUnapprove.value = true;
             }
         }
