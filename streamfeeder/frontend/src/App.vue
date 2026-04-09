@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { mdiFolderNetwork } from '@mdi/js';
 import { provide, ref } from 'vue';
 import { RouterView } from 'vue-router';
 import { createClient } from 'webdav';
@@ -44,6 +45,32 @@ provide("davClient", client);
           <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
         </template>
         <v-app-bar-title @click="clickTitle">StreamFeeder</v-app-bar-title>
+
+        <!-- drop down to select/show current dav connection -->
+        <v-menu>
+          <template v-slot:activator="{ props }">
+            <v-btn v-bind="props">
+              <template v-slot:prepend>
+                <v-icon :icon="mdiFolderNetwork"></v-icon>
+              </template>
+              <span>{{ davEndpoint }}</span><!-- TODO - get this shit from the user, with their friendly name...-->
+            </v-btn>
+
+          </template>
+          <v-list>
+            <v-list-item value="profile" prepend-icon="mdi-account">
+              <v-list-item-title>Profile</v-list-item-title>
+            </v-list-item>
+            <v-list-item value="settings" prepend-icon="mdi-cog">
+              <v-list-item-title>Settings</v-list-item-title>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-list-item value="logout" prepend-icon="mdi-logout">
+              <v-list-item-title>Logout</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+
       </v-app-bar>
       <v-navigation-drawer
         v-model="drawer"
