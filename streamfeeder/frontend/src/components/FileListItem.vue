@@ -105,7 +105,7 @@ onMounted(async () => {
     // umm, what if we didn't have an si?!
 
     try {
-        const response = await fetch("/api/finfo/" + props.item.filename);
+        const response = await fetch("/api/desk/finfo/" + props.item.filename);
         if (!response.ok) {
             // I think we need a prop or emit or something that says "we've failed" and the top level view can have a "retry" button/timer that retries all children that failed?
             console.log("Not... sure what we do here?  ");
@@ -164,7 +164,7 @@ async function handleApprove(ev)
         filename: props.item.filename
     }
     try {
-        await postData("/api/approve", data)
+        await postData("/api/desk/approve", data)
     } catch (err) {
         // reset states and shit?
         console.log("best effort, we failed: ", err)
@@ -182,7 +182,7 @@ async function handleUnapprove(ev)
         filename: props.item.filename
     }
     try {
-        await postData("/api/unapprove", data)
+        await postData("/api/desk/unapprove", data)
     } catch (err) {
         // reset states and shit?
         console.log("best effort, we failed: ", err)
@@ -199,7 +199,7 @@ async function handleCaption(ev)
         caption: caption.value,
     }
     try {
-        await postData("/api/caption", data)
+        await postData("/api/desk/caption", data)
     } catch (err) {
         // reset states and shit?
         console.log("best effort, we failed: ", err)
